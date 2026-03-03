@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell.exe -Command \"node --version; npm --version\")",
+      "Bash(powershell.exe -Command \"Test-Path ''C:\\\\Program Files\\\\nodejs''; Test-Path ''C:\\\\Program Files \\(x86\\)\\\\nodejs''; Test-Path ''C:\\\\Users\\\\33771\\\\AppData\\\\Roaming\\\\nvm''\")",
+      "Bash(powershell.exe -Command \"Get-Command bun -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source; Test-Path ''C:\\\\Users\\\\33771\\\\.bun\\\\bin\\\\bun.exe''\")"
+    ]
+  }
+}
