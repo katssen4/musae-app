@@ -2,12 +2,12 @@ import type { Post } from '@/types'
 
 interface PostPreviewProps {
   post: Post
+  isSelected?: boolean
   onApprove?: (id: string) => void
   onSchedule?: (id: string) => void
 }
 
-// Sprint 2 : affichage d'un post généré par l'IA
-export default function PostPreview({ post, onApprove, onSchedule }: PostPreviewProps) {
+export default function PostPreview({ post, isSelected = false, onApprove, onSchedule }: PostPreviewProps) {
   const platformLabel: Record<string, string> = {
     facebook: 'Facebook',
     instagram: 'Instagram',
@@ -23,7 +23,7 @@ export default function PostPreview({ post, onApprove, onSchedule }: PostPreview
   }
 
   return (
-    <div className="card space-y-4">
+    <div className={`card space-y-4 transition-all ${isSelected ? 'border-musae-ink ring-1 ring-musae-ink' : ''}`}>
       <div className="flex items-center justify-between">
         <span className="font-sans text-sm font-medium text-musae-gold uppercase tracking-wide">
           {platformLabel[post.platform] ?? post.platform}
@@ -41,16 +41,20 @@ export default function PostPreview({ post, onApprove, onSchedule }: PostPreview
         <div className="flex gap-3 pt-2">
           {onApprove && (
             <button
-              onClick={() => onApprove(post.id)}
-              className="flex-1 btn-primary text-sm py-3"
+              onClick={() => !isSelected && onApprove(post.id)}
+              className={`flex-1 rounded-lg font-sans font-medium text-base py-3 transition-colors focus:outline-none focus:ring-2 focus:ring-musae-gold focus:ring-offset-2 ${
+                isSelected
+                  ? 'bg-musae-ink text-musae-parchment cursor-default'
+                  : 'border-2 border-musae-ink text-musae-ink hover:bg-musae-ink/5 cursor-pointer'
+              }`}
             >
-              Choisir ce post
+              {isSelected ? '✓ Sélectionné' : 'Choisir ce post'}
             </button>
           )}
-          {onSchedule && (
+          {onSchedule && !isSelected && (
             <button
               onClick={() => onSchedule(post.id)}
-              className="flex-1 btn-secondary text-sm py-3"
+              className="flex-1 rounded-lg font-sans font-medium text-base py-3 border-2 border-musae-ink text-musae-ink hover:bg-musae-ink/5 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-musae-gold focus:ring-offset-2"
             >
               Programmer
             </button>

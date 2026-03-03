@@ -3,11 +3,11 @@ import PostPreview from './PostPreview'
 
 interface PostSelectorProps {
   posts: Post[]
-  onSelect: (postId: string) => void
+  selectedByPlatform: Partial<Record<Platform, string>>
+  onSelect: (platform: Platform, postId: string) => void
 }
 
-// Sprint 2 : sélection parmi les propositions générées par plateforme
-export default function PostSelector({ posts, onSelect }: PostSelectorProps) {
+export default function PostSelector({ posts, selectedByPlatform, onSelect }: PostSelectorProps) {
   const platforms: Platform[] = ['facebook', 'instagram']
 
   const platformLabel: Record<Platform, string> = {
@@ -31,7 +31,8 @@ export default function PostSelector({ posts, onSelect }: PostSelectorProps) {
               <PostPreview
                 key={post.id}
                 post={post}
-                onApprove={onSelect}
+                isSelected={selectedByPlatform[platform] === post.id}
+                onApprove={(id) => onSelect(platform, id)}
               />
             ))}
           </div>

@@ -61,7 +61,7 @@ export interface Schedule {
 
 // API payloads
 export interface GenerateRequest {
-  contentId: string
+  contentId?: string   // optionnel : créé automatiquement si absent
   rawText?: string
   imageUrl?: string
   platforms: Platform[]

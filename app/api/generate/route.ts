@@ -12,13 +12,34 @@ export async function POST(request: Request) {
   }
 
   const body: GenerateRequest = await request.json()
-  const { contentId, rawText, imageUrl, platforms, authorStyle } = body
+  const { rawText, imageUrl, platforms, authorStyle, contentId: providedContentId } = body
 
-  if (!contentId || platforms.length === 0) {
+  if ((!rawText && !imageUrl) || !platforms || platforms.length === 0) {
     return NextResponse.json({ error: 'Paramètres manquants' }, { status: 400 })
   }
 
-  // Récupérer le profil pour le style auteur si non fourni
+  // Créer l'entrée content en base si aucun contentId fourni
+  let contentId = providedContentId
+  if (!contentId) {
+    const contentType = rawText && imageUrl ? 'mixed' : rawText ? 'text' : 'image'
+    const { data: content, error: contentError } = await supabase
+      .from('contents')
+      .insert({
+        user_id: user.id,
+        type: contentType,
+        raw_text: rawText ?? null,
+        image_url: imageUrl ?? null,
+      })
+      .select('id')
+      .single()
+
+    if (contentError || !content) {
+      return NextResponse.json({ error: 'Erreur de sauvegarde du contenu' }, { status: 500 })
+    }
+    contentId = content.id
+  }
+
+  // Récupérer le style auteur depuis le profil si non fourni
   let style = authorStyle
   if (!style) {
     const { data: profile } = await supabase
@@ -30,10 +51,9 @@ export async function POST(request: Request) {
     style = profile?.author_style ?? undefined
   }
 
-  const posts = await generatePosts({ rawText, imageUrl, platforms, authorStyle: style })
+  const generatedPosts = await generatePosts({ rawText, imageUrl, platforms, authorStyle: style })
 
-  // Sauvegarder les posts générés en base
-  const postsToInsert = posts.map((p) => ({
+  const postsToInsert = generatedPosts.map((p) => ({
     user_id: user.id,
     content_id: contentId,
     platform: p.platform,
@@ -48,7 +68,7 @@ export async function POST(request: Request) {
     .select()
 
   if (error) {
-    return NextResponse.json({ error: 'Erreur de sauvegarde' }, { status: 500 })
+    return NextResponse.json({ error: 'Erreur de sauvegarde des posts' }, { status: 500 })
   }
 
   return NextResponse.json({ posts: savedPosts })
