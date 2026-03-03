@@ -1,9 +1,9 @@
-// Auto-generated types for Supabase tables
-// After creating the schema, run: npx supabase gen types typescript --linked > types/database.ts
+// Types Supabase — format exact compatible supabase-js 2.x / postgrest-js 2.x
+// Les sections vides utilisent { [_ in never]: never } et non Record<string, never>
 
-export type Json = string | number | boolean | null | { [key: string]: Json } | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       profiles: {
@@ -34,6 +34,7 @@ export interface Database {
           plan?: string
           created_at?: string
         }
+        Relationships: []
       }
       social_connections: {
         Row: {
@@ -66,6 +67,7 @@ export interface Database {
           expires_at?: string | null
           created_at?: string
         }
+        Relationships: []
       }
       contents: {
         Row: {
@@ -92,6 +94,7 @@ export interface Database {
           image_url?: string | null
           created_at?: string
         }
+        Relationships: []
       }
       posts: {
         Row: {
@@ -133,6 +136,7 @@ export interface Database {
           meta_post_id?: string | null
           created_at?: string
         }
+        Relationships: []
       }
       schedules: {
         Row: {
@@ -162,10 +166,20 @@ export interface Database {
           is_active?: boolean
           created_at?: string
         }
+        Relationships: []
       }
     }
-    Views: Record<string, never>
-    Functions: Record<string, never>
-    Enums: Record<string, never>
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
 }

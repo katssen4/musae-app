@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase-server'
+import SignOutButton from '@/components/SignOutButton'
 
 export default async function DashboardLayout({
   children,
@@ -36,6 +37,7 @@ export default async function DashboardLayout({
             >
               Réglages
             </Link>
+            <SignOutButton />
           </nav>
         </div>
       </header>
