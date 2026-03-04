@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
-import { publishToMeta } from '@/lib/meta'
+import { publishPost } from '@/lib/publish'
 
 export async function POST(request: Request) {
   const supabase = createServerClient()
@@ -15,51 +15,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'postId manquant' }, { status: 400 })
   }
 
-  // Récupérer le post
-  const { data: post, error: postError } = await supabase
-    .from('posts')
-    .select('*')
-    .eq('id', postId)
-    .eq('user_id', user.id)
-    .single()
+  const result = await publishPost(supabase, postId, user.id)
 
-  if (postError || !post) {
-    return NextResponse.json({ error: 'Post introuvable' }, { status: 404 })
+  if (!result.success) {
+    return NextResponse.json({ error: result.error }, { status: 400 })
   }
 
-  // Récupérer le token Meta de l'utilisateur
-  const { data: connection } = await supabase
-    .from('social_connections')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('platform', post.platform)
-    .single()
-
-  if (!connection) {
-    return NextResponse.json(
-      { error: `Compte ${post.platform} non connecté` },
-      { status: 400 }
-    )
-  }
-
-  // Publier via Meta Graph API
-  const metaPostId = await publishToMeta({
-    platform: post.platform,
-    body: post.body,
-    accessToken: connection.access_token,
-    pageId: connection.page_id ?? undefined,
-    instagramAccountId: connection.instagram_account_id ?? undefined,
-  })
-
-  // Mettre à jour le statut du post
-  await supabase
-    .from('posts')
-    .update({
-      status: 'published',
-      published_at: new Date().toISOString(),
-      meta_post_id: metaPostId,
-    })
-    .eq('id', postId)
-
-  return NextResponse.json({ success: true, metaPostId })
+  return NextResponse.json({ success: true, metaPostId: result.metaPostId })
 }

@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-server'
+import { publishPost } from '@/lib/publish'
 
 // Cron job Vercel : tourne toutes les heures (cf. vercel.json)
 // Publie automatiquement les posts planifiés dont l'heure est passée
 export async function GET(request: Request) {
-  // Vérifier le token de sécurité du cron
   const authHeader = request.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
@@ -12,7 +12,6 @@ export async function GET(request: Request) {
 
   const supabase = createAdminClient()
 
-  // Récupérer tous les posts à publier
   const { data: posts, error } = await supabase
     .from('posts')
     .select('id')
@@ -24,19 +23,13 @@ export async function GET(request: Request) {
   }
 
   const results = await Promise.allSettled(
-    (posts ?? []).map(async (post) => {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/publish`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId: post.id }),
-      })
-      if (!res.ok) throw new Error(`Échec publication post ${post.id}`)
-      return post.id
-    })
+    (posts ?? []).map((post) => publishPost(supabase, post.id))
   )
 
-  const published = results.filter((r) => r.status === 'fulfilled').length
-  const failed = results.filter((r) => r.status === 'rejected').length
+  const published = results.filter(
+    (r) => r.status === 'fulfilled' && r.value.success
+  ).length
+  const failed = results.length - published
 
   return NextResponse.json({ published, failed })
 }

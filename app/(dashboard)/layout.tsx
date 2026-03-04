@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase-server'
 import SignOutButton from '@/components/SignOutButton'
+import { ToastProvider } from '@/components/Toast'
 
 export default async function DashboardLayout({
   children,
@@ -43,7 +44,9 @@ export default async function DashboardLayout({
       </header>
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-6 py-8">
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </main>
     </div>
   )

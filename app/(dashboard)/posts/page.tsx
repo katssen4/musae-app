@@ -1,28 +1,7 @@
 import { createServerClient } from '@/lib/supabase-server'
 import Link from 'next/link'
 import type { Post } from '@/types'
-
-const platformLabel: Record<string, string> = {
-  facebook: 'Facebook',
-  instagram: 'Instagram',
-  linkedin: 'LinkedIn',
-}
-
-const formatLabel: Record<string, string> = {
-  quote: 'Citation',
-  reflective: 'Réflexion',
-  question: 'Question',
-  announcement: 'Annonce',
-  behind_scenes: 'Coulisses',
-}
-
-const statusConfig: Record<string, { label: string; color: string }> = {
-  draft: { label: 'Brouillon', color: 'text-stone-400' },
-  approved: { label: 'Sélectionné', color: 'text-musae-sage' },
-  scheduled: { label: 'Programmé', color: 'text-musae-gold' },
-  published: { label: 'Publié', color: 'text-green-600' },
-  failed: { label: 'Erreur', color: 'text-red-500' },
-}
+import PostCard from '@/components/PostCard'
 
 export default async function PostsPage() {
   const supabase = createServerClient()
@@ -72,38 +51,9 @@ export default async function PostsPage() {
       </div>
 
       <div className="space-y-4">
-        {typedPosts.map((post) => {
-          const status = statusConfig[post.status] ?? { label: post.status, color: 'text-stone-400' }
-          return (
-            <div key={post.id} className="card space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="font-sans text-sm font-medium text-musae-gold uppercase tracking-wide">
-                    {platformLabel[post.platform] ?? post.platform}
-                  </span>
-                  <span className="font-sans text-sm text-stone-400">
-                    {formatLabel[post.format] ?? post.format}
-                  </span>
-                </div>
-                <span className={`font-sans text-sm font-medium ${status.color}`}>
-                  {status.label}
-                </span>
-              </div>
-
-              <p className="font-sans text-base text-musae-ink leading-relaxed line-clamp-3">
-                {post.body}
-              </p>
-
-              <p className="font-sans text-sm text-stone-400">
-                {new Date(post.created_at).toLocaleDateString('fr-FR', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })}
-              </p>
-            </div>
-          )
-        })}
+        {typedPosts.map((post) => (
+          <PostCard key={post.id} post={post} />
+        ))}
       </div>
     </div>
   )

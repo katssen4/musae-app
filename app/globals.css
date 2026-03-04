@@ -47,3 +47,19 @@
     @apply bg-white rounded-xl border border-stone-200 p-6 shadow-sm;
   }
 }
+
+@layer utilities {
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-fade-in-up {
+    animation: fade-in-up 0.2s ease-out;
+  }
+}

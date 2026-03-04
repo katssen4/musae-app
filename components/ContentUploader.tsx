@@ -3,15 +3,24 @@
 import { useState } from 'react'
 import type { Post, Platform } from '@/types'
 import PostSelector from './PostSelector'
+import { useToast } from './Toast'
 
 type Phase = 'input' | 'loading' | 'results'
 
-export default function ContentUploader() {
+interface ContentUploaderProps {
+  connectedPlatforms: Platform[]
+}
+
+export default function ContentUploader({ connectedPlatforms }: ContentUploaderProps) {
   const [text, setText] = useState('')
   const [phase, setPhase] = useState<Phase>('input')
   const [posts, setPosts] = useState<Post[]>([])
   const [selectedByPlatform, setSelectedByPlatform] = useState<Partial<Record<Platform, string>>>({})
   const [error, setError] = useState<string | null>(null)
+  const [publishing, setPublishing] = useState(false)
+  const { toast } = useToast()
+
+  const hasMetaConnection = connectedPlatforms.length > 0
 
   async function handleGenerate() {
     if (!text.trim()) return
@@ -49,7 +58,6 @@ export default function ContentUploader() {
 
   function handleSelect(platform: Platform, postId: string) {
     setSelectedByPlatform(prev => ({ ...prev, [platform]: postId }))
-    // Mise à jour du statut en arrière-plan
     fetch(`/api/posts/${postId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -63,6 +71,35 @@ export default function ContentUploader() {
     setSelectedByPlatform({})
     setError(null)
     setText('')
+  }
+
+  async function handlePublish() {
+    setPublishing(true)
+    try {
+      const postIds = Object.values(selectedByPlatform).filter(Boolean) as string[]
+      const results = await Promise.allSettled(
+        postIds.map(postId =>
+          fetch('/api/publish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ postId }),
+          }).then(res => {
+            if (!res.ok) throw new Error()
+            return res.json()
+          })
+        )
+      )
+
+      const succeeded = results.filter(r => r.status === 'fulfilled').length
+      const failed = results.filter(r => r.status === 'rejected').length
+
+      if (succeeded > 0) toast(`${succeeded} publication${succeeded > 1 ? 's' : ''} envoyée${succeeded > 1 ? 's' : ''} !`)
+      if (failed > 0) toast(`${failed} publication${failed > 1 ? 's' : ''} en erreur`, 'error')
+    } catch {
+      toast('Erreur lors de la publication', 'error')
+    } finally {
+      setPublishing(false)
+    }
   }
 
   const hasSelection = Object.values(selectedByPlatform).some(Boolean)
@@ -97,21 +134,38 @@ export default function ContentUploader() {
 
         {hasSelection && (
           <div className="space-y-3">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button className="btn-primary sm:flex-1" disabled>
-                Publier maintenant
-              </button>
-              <button className="btn-secondary sm:flex-1" disabled>
-                Programmer automatiquement
-              </button>
-            </div>
-            <p className="font-sans text-sm text-stone-400 text-center">
-              Connectez vos réseaux sociaux dans les{' '}
-              <a href="/dashboard/settings" className="underline underline-offset-2 hover:text-musae-ink transition-colors">
-                Réglages
-              </a>{' '}
-              pour publier.
-            </p>
+            {hasMetaConnection ? (
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  className="btn-primary sm:flex-1"
+                  onClick={handlePublish}
+                  disabled={publishing}
+                >
+                  {publishing ? 'Publication en cours…' : 'Publier maintenant'}
+                </button>
+                <button className="btn-secondary sm:flex-1" disabled>
+                  Programmer automatiquement
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button className="btn-primary sm:flex-1" disabled>
+                    Publier maintenant
+                  </button>
+                  <button className="btn-secondary sm:flex-1" disabled>
+                    Programmer automatiquement
+                  </button>
+                </div>
+                <p className="font-sans text-sm text-stone-400 text-center">
+                  Connectez vos réseaux sociaux dans les{' '}
+                  <a href="/dashboard/settings" className="underline underline-offset-2 hover:text-musae-ink transition-colors">
+                    Réglages
+                  </a>{' '}
+                  pour publier. En attendant, utilisez le bouton « Copier » sur chaque post.
+                </p>
+              </>
+            )}
           </div>
         )}
       </div>

@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase-server'
 import { hasAccess, getTrialStatus } from '@/lib/stripe'
-import type { Profile } from '@/types'
+import type { Profile, Platform } from '@/types'
 import ContentUploader from '@/components/ContentUploader'
 
 export default async function DashboardPage() {
@@ -11,15 +11,15 @@ export default async function DashboardPage() {
 
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('plan, created_at')
-    .eq('id', user.id)
-    .single()
+  const [{ data: profile }, { data: connections }] = await Promise.all([
+    supabase.from('profiles').select('plan, created_at').eq('id', user.id).single(),
+    supabase.from('social_connections').select('platform').eq('user_id', user.id),
+  ])
 
   const p = profile as Pick<Profile, 'plan' | 'created_at'>
   const canAccess = hasAccess(p.plan, p.created_at)
   const trial = p.plan === 'free' ? getTrialStatus(p.created_at) : null
+  const connectedPlatforms = (connections ?? []).map(c => c.platform) as Platform[]
 
   return (
     <div className="space-y-8">
@@ -48,7 +48,7 @@ export default async function DashboardPage() {
       )}
 
       {canAccess ? (
-        <ContentUploader />
+        <ContentUploader connectedPlatforms={connectedPlatforms} />
       ) : (
         <div className="card text-center py-16 space-y-4">
           <p className="font-serif text-xl text-stone-400">

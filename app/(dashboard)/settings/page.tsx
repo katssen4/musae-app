@@ -1,8 +1,12 @@
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 import { getTrialStatus, PLAN_MUSAE, TRIAL_DURATION_DAYS } from '@/lib/stripe'
-import type { Profile } from '@/types'
+import type { Profile, SocialConnection } from '@/types'
 import BillingActions from '@/components/BillingActions'
+import SocialConnections from '@/components/SocialConnections'
+import SettingsToasts from '@/components/SettingsToasts'
+import ScheduleConfig from '@/components/ScheduleConfig'
 
 export default async function SettingsPage() {
   const supabase = createServerClient()
@@ -10,11 +14,10 @@ export default async function SettingsPage() {
 
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
+  const [{ data: profile }, { data: connections }] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', user.id).single(),
+    supabase.from('social_connections').select('*').eq('user_id', user.id),
+  ])
 
   const p = profile as Profile
   const trial = getTrialStatus(p.created_at)
@@ -22,6 +25,10 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-8">
+      <Suspense fallback={null}>
+        <SettingsToasts />
+      </Suspense>
+
       <div>
         <h1 className="font-serif text-3xl text-musae-ink mb-2">
           Réglages
@@ -101,20 +108,19 @@ export default async function SettingsPage() {
         )}
       </section>
 
-      {/* Réseaux sociaux — Sprint 4 */}
+      {/* Réseaux sociaux */}
       <section className="card space-y-4">
         <h2 className="font-serif text-xl text-musae-ink">Réseaux sociaux</h2>
-        <p className="font-sans text-base text-stone-500">
-          La connexion à Facebook et Instagram sera disponible prochainement.
-        </p>
+        <SocialConnections connections={(connections ?? []) as SocialConnection[]} />
       </section>
 
-      {/* Planning — Sprint 4 */}
+      {/* Planning de publication */}
       <section className="card space-y-4">
         <h2 className="font-serif text-xl text-musae-ink">Planning de publication</h2>
-        <p className="font-sans text-base text-stone-500">
-          La configuration du planning sera disponible prochainement.
+        <p className="font-sans text-sm text-stone-400 mb-2">
+          Configurez la fréquence et l&apos;heure de vos publications automatiques.
         </p>
+        <ScheduleConfig />
       </section>
     </div>
   )
