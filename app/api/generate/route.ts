@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { generatePosts } from '@/lib/claude'
+import { hasAccess } from '@/lib/stripe'
 import type { GenerateRequest } from '@/types'
 
 export async function POST(request: Request) {
@@ -9,6 +10,20 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  }
+
+  // Vérifier l'accès (abonnement ou essai gratuit)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('plan, created_at, author_style')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile || !hasAccess(profile.plan, profile.created_at)) {
+    return NextResponse.json(
+      { error: 'Votre essai gratuit est terminé. Abonnez-vous pour continuer.' },
+      { status: 403 }
+    )
   }
 
   const body: GenerateRequest = await request.json()
@@ -39,17 +54,8 @@ export async function POST(request: Request) {
     contentId = content.id
   }
 
-  // Récupérer le style auteur depuis le profil si non fourni
-  let style = authorStyle
-  if (!style) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('full_name, author_style')
-      .eq('id', user.id)
-      .single()
-
-    style = profile?.author_style ?? undefined
-  }
+  // Utiliser le style auteur depuis le profil (déjà récupéré) si non fourni
+  const style = authorStyle ?? profile.author_style ?? undefined
 
   const generatedPosts = await generatePosts({ rawText, imageUrl, platforms, authorStyle: style })
 

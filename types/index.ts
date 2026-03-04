@@ -1,7 +1,7 @@
 export type Platform = 'facebook' | 'instagram' | 'linkedin'
 export type PostFormat = 'quote' | 'reflective' | 'question' | 'announcement' | 'behind_scenes'
 export type PostStatus = 'draft' | 'approved' | 'scheduled' | 'published' | 'failed'
-export type Plan = 'free' | 'essential' | 'author'
+export type Plan = 'free' | 'musae'
 export type ContentType = 'text' | 'image' | 'mixed'
 export type ScheduleFrequency = 'daily' | '3x_week' | 'weekly'
 

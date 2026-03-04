@@ -145,6 +145,27 @@ CREATE INDEX IF NOT EXISTS contents_user_id_idx ON public.contents (user_id);
 CREATE INDEX IF NOT EXISTS social_connections_user_id_idx ON public.social_connections (user_id);
 
 -- ============================================================
+-- 6. TABLE WAITLIST
+-- Emails collectés depuis la landing page (musae.io)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.waitlist (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  source TEXT DEFAULT 'landing',   -- 'hero' ou 'final' (section du formulaire)
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+ALTER TABLE public.waitlist ENABLE ROW LEVEL SECURITY;
+
+-- Permettre l'insertion anonyme (visiteurs non connectés via la landing page)
+CREATE POLICY "waitlist_insert_anon" ON public.waitlist
+  FOR INSERT WITH CHECK (true);
+
+-- Permettre la lecture anonyme (pour le compteur sur la landing page)
+CREATE POLICY "waitlist_select_anon" ON public.waitlist
+  FOR SELECT USING (true);
+
+-- ============================================================
 -- STORAGE : Bucket pour les images uploadées par les auteurs
 -- À configurer dans Supabase Dashboard > Storage
 -- ============================================================

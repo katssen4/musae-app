@@ -28,12 +28,8 @@ export async function POST(request: Request) {
       const customerId = subscription.customer as string
       const priceId = subscription.items.data[0]?.price.id
 
-      const plan =
-        priceId === process.env.STRIPE_PRICE_AUTHOR
-          ? 'author'
-          : priceId === process.env.STRIPE_PRICE_ESSENTIAL
-            ? 'essential'
-            : 'free'
+      const isActive = ['active', 'trialing'].includes(subscription.status)
+      const plan = (priceId === process.env.STRIPE_PRICE_MUSAE && isActive) ? 'musae' : 'free'
 
       await supabase
         .from('profiles')

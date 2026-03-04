@@ -29,6 +29,10 @@ export default function ContentUploader() {
       })
 
       if (!res.ok) {
+        if (res.status === 403) {
+          window.location.href = '/dashboard/settings'
+          return
+        }
         const data = await res.json()
         throw new Error(data.error ?? 'Erreur lors de la génération')
       }
