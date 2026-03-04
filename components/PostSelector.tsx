@@ -5,9 +5,10 @@ interface PostSelectorProps {
   posts: Post[]
   selectedByPlatform: Partial<Record<Platform, string>>
   onSelect: (platform: Platform, postId: string) => void
+  imageUrl?: string
 }
 
-export default function PostSelector({ posts, selectedByPlatform, onSelect }: PostSelectorProps) {
+export default function PostSelector({ posts, selectedByPlatform, onSelect, imageUrl }: PostSelectorProps) {
   const platforms: Platform[] = ['facebook', 'instagram']
 
   const platformLabel: Record<Platform, string> = {
@@ -33,6 +34,7 @@ export default function PostSelector({ posts, selectedByPlatform, onSelect }: Po
                 post={post}
                 isSelected={selectedByPlatform[platform] === post.id}
                 onApprove={(id) => onSelect(platform, id)}
+                imageUrl={imageUrl}
               />
             ))}
           </div>

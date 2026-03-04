@@ -35,19 +35,37 @@ async function publishToFacebook(options: {
 }): Promise<string> {
   const { body, accessToken, pageId, imageUrl } = options
 
-  const payload: Record<string, string> = {
-    message: body,
-    access_token: accessToken,
-  }
-
+  // Photo post via /{page-id}/photos (creates a real photo post, not a link share)
   if (imageUrl) {
-    payload.link = imageUrl
+    const payload = {
+      url: imageUrl,
+      message: body,
+      access_token: accessToken,
+    }
+
+    const res = await fetch(`${GRAPH_BASE_URL}/${pageId}/photos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    if (!res.ok) {
+      const err = await res.json()
+      throw new Error(`Meta API error: ${JSON.stringify(err)}`)
+    }
+
+    const data = await res.json()
+    return data.id as string
   }
 
+  // Text-only post via /{page-id}/feed
   const res = await fetch(`${GRAPH_BASE_URL}/${pageId}/feed`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      message: body,
+      access_token: accessToken,
+    }),
   })
 
   if (!res.ok) {
@@ -68,7 +86,6 @@ async function publishToInstagram(options: {
   const { body, accessToken, instagramAccountId, imageUrl } = options
 
   // Instagram nécessite une image pour publier
-  // Sans image, on utilise une image par défaut (à configurer)
   const mediaImageUrl = imageUrl ?? process.env.INSTAGRAM_DEFAULT_IMAGE_URL
 
   if (!mediaImageUrl) {

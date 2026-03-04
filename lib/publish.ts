@@ -25,6 +25,20 @@ export async function publishPost(
     return { success: false, error: 'Post introuvable' }
   }
 
+  // Récupérer l'image depuis la table contents
+  let imageUrl: string | undefined
+  if (post.content_id) {
+    const { data: content } = await supabase
+      .from('contents')
+      .select('image_url')
+      .eq('id', post.content_id)
+      .single()
+
+    if (content?.image_url) {
+      imageUrl = content.image_url
+    }
+  }
+
   const { data: connection } = await supabase
     .from('social_connections')
     .select('*')
@@ -43,6 +57,7 @@ export async function publishPost(
       accessToken: connection.access_token,
       pageId: connection.page_id ?? undefined,
       instagramAccountId: connection.instagram_account_id ?? undefined,
+      imageUrl,
     })
 
     await supabase
