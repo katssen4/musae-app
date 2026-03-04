@@ -57,7 +57,13 @@ export async function POST(request: Request) {
   // Utiliser le style auteur depuis le profil (déjà récupéré) si non fourni
   const style = authorStyle ?? profile.author_style ?? undefined
 
-  const generatedPosts = await generatePosts({ rawText, imageUrl, platforms, authorStyle: style })
+  let generatedPosts
+  try {
+    generatedPosts = await generatePosts({ rawText, imageUrl, platforms, authorStyle: style })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Erreur lors de la génération des posts'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
 
   const postsToInsert = generatedPosts.map((p) => ({
     user_id: user.id,
