@@ -24,25 +24,35 @@ export default function RegisterPage() {
       password,
       options: {
         data: { full_name: fullName },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     })
 
     if (error) {
-      setError("Une erreur est survenue. Veuillez réessayer.")
+      console.error('[register] Erreur Supabase:', error.message, error.status)
+
+      // Messages d'erreur explicites selon le type d'erreur Supabase
+      if (error.message.includes('already registered') || error.message.includes('already been registered')) {
+        setError('Cette adresse email est déjà utilisée. Essayez de vous connecter.')
+      } else if (error.message.includes('valid password') || error.message.includes('at least')) {
+        setError('Le mot de passe doit contenir au moins 8 caractères.')
+      } else if (error.message.includes('valid email') || error.message.includes('invalid')) {
+        setError('Adresse email invalide. Vérifiez le format.')
+      } else if (error.message.includes('rate') || error.status === 429) {
+        setError('Trop de tentatives. Veuillez patienter quelques minutes.')
+      } else if (error.message.includes('hook')) {
+        setError('Erreur lors de l\'envoi de l\'email de confirmation. Veuillez réessayer.')
+      } else {
+        setError(`Une erreur est survenue : ${error.message}`)
+      }
+
       setLoading(false)
       return
     }
 
-    // Envoi de l'email de bienvenue — non-bloquant, l'inscription reste valide même en cas d'échec
-    const prenom = fullName.trim().split(' ')[0]
-    fetch('/api/email/welcome', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, prenom }),
-    }).catch((err) => console.error('[register] Email bienvenue non envoyé:', err))
-
-    router.push('/dashboard')
-    router.refresh()
+    // Rediriger vers la page de confirmation email
+    // L'email de bienvenue sera envoyé après confirmation via /auth/callback
+    router.push('/register/confirm')
   }
 
   return (
