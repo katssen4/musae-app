@@ -15,7 +15,7 @@ export async function POST(request: Request) {
 
   if (error) {
     console.error('[email/welcome] Erreur Resend:', error)
-    return NextResponse.json({ sent: false })
+    return NextResponse.json({ sent: false, error: error.message ?? String(error) })
   }
 
   return NextResponse.json({ sent: true })
