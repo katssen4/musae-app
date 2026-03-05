@@ -94,10 +94,14 @@ function construireLienVerification(
   redirectTo: string
 ): string {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  // Rediriger vers notre callback qui échange le code et envoie l'email de bienvenue
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.musae.io'
+  const callbackUrl = `${appUrl}/auth/callback`
+
   const params = new URLSearchParams({
     token_hash: tokenHash,
     type,
-    redirect_to: redirectTo || 'https://app.musae.io/dashboard',
+    redirect_to: redirectTo || callbackUrl,
   })
   return `${supabaseUrl}/auth/v1/verify?${params.toString()}`
 }
@@ -109,6 +113,14 @@ function extrairePrenom(fullName?: string): string {
 }
 
 export async function POST(request: Request) {
+  // Debug temporaire — vérifier si la variable est injectée par Vercel
+  console.log('[auth-hook] DEBUG env vars:', {
+    hasSecret: !!process.env.SUPABASE_AUTH_HOOK_SECRET,
+    secretLength: process.env.SUPABASE_AUTH_HOOK_SECRET?.length ?? 0,
+    secretPrefix: process.env.SUPABASE_AUTH_HOOK_SECRET?.slice(0, 8) ?? 'MISSING',
+    envKeys: Object.keys(process.env).filter(k => k.includes('SUPABASE')).sort(),
+  })
+
   // Lire le body brut pour la vérification de signature
   const rawBody = await request.text()
 
