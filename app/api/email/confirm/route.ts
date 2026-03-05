@@ -52,26 +52,30 @@ function verifierSignature(rawBody: string, request: Request): boolean {
     ? secretPart.slice(6)
     : secretPart
 
-  // La signature est au format "v1,SIGNATURE" — extraire les parties
-  // Le header peut contenir : "t=TIMESTAMP,v1=SIGNATURE"
+  // Format Standard Webhooks :
+  // Header webhook-signature : "v1,<base64_signature>"
+  // Header webhook-id : identifiant du message
+  // Header webhook-timestamp : timestamp unix
   const parts = signature.split(',')
-  let timestamp = ''
-  let sig = ''
-  for (const part of parts) {
-    const [key, val] = part.split('=')
-    if (key === 't') timestamp = val
-    if (key === 'v1') sig = val
+  if (parts.length < 2 || parts[0] !== 'v1') {
+    console.error('[auth-hook] Format signature invalide:', signature)
+    return false
   }
+  const sig = parts[1]
 
-  if (!sig) {
-    console.error('[auth-hook] Signature v1 non trouvée dans:', signature)
+  // Le timestamp vient du header séparé webhook-timestamp
+  const timestamp = request.headers.get('webhook-timestamp') || ''
+  const msgId = request.headers.get('webhook-id') || ''
+
+  if (!timestamp) {
+    console.error('[auth-hook] Header webhook-timestamp absent')
     return false
   }
 
-  // Vérifier le HMAC : sign(timestamp.body) avec le secret décodé en base64
+  // Vérifier le HMAC : sign(msg_id.timestamp.body) avec le secret décodé en base64
   try {
     const secretBytes = Buffer.from(secretKey, 'base64')
-    const signedContent = `${timestamp}.${rawBody}`
+    const signedContent = `${msgId}.${timestamp}.${rawBody}`
     const expectedSig = crypto
       .createHmac('sha256', secretBytes)
       .update(signedContent)
