@@ -142,6 +142,10 @@ export async function POST(request: Request) {
   }
 
   const { user, email_data } = payload
+
+  // Debug temporaire — voir la structure exacte du payload Supabase
+  console.log('[auth-hook] DEBUG payload:', JSON.stringify({ user: { id: user?.id, email: user?.email }, email_data }, null, 2))
+
   const prenom = extrairePrenom(user.user_metadata?.full_name)
   const email = user.email
 
