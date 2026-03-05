@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { envoyerEmailConfirmation, envoyerEmailResetPassword } from '@/lib/email'
 
 // ─── Supabase Auth Hook : Send Email ─────────────────────────────────────────
@@ -6,13 +7,10 @@ import { envoyerEmailConfirmation, envoyerEmailResetPassword } from '@/lib/email
 // Configuration : Supabase Dashboard → Authentication → Hooks → Send Email
 //   - Type : HTTPS
 //   - URL  : https://app.musae.io/api/email/confirm
-//   - Secret : valeur de SUPABASE_AUTH_HOOK_SECRET dans .env.local
+//   - Secret : valeur de SUPABASE_AUTH_HOOK_SECRET (format v1,whsec_...)
 //
-// Payload reçu de Supabase :
-// {
-//   "user": { "id", "email", "user_metadata": { "full_name" } },
-//   "email_data": { "token_hash", "redirect_to", "email_action_type", "site_url" }
-// }
+// Supabase signe le body avec HMAC-SHA256 et envoie la signature
+// dans le header "webhook-signature".
 
 // Types du payload Supabase Auth Hook
 interface AuthHookPayload {
@@ -31,23 +29,62 @@ interface AuthHookPayload {
   }
 }
 
-// Vérifie le secret partagé avec Supabase
-function verifierSecret(request: Request): boolean {
-  const secret = process.env.SUPABASE_AUTH_HOOK_SECRET
-  if (!secret) {
+// Vérifie la signature webhook Supabase (HMAC-SHA256)
+function verifierSignature(rawBody: string, request: Request): boolean {
+  const secretEnv = process.env.SUPABASE_AUTH_HOOK_SECRET
+  if (!secretEnv) {
     console.error('[auth-hook] SUPABASE_AUTH_HOOK_SECRET non configuré')
     return false
   }
 
-  const authHeader = request.headers.get('authorization')
-  if (!authHeader) return false
+  const signature = request.headers.get('webhook-signature')
+  if (!signature) {
+    console.error('[auth-hook] Header webhook-signature absent')
+    return false
+  }
 
-  // Supabase envoie "Bearer <secret>" ou le secret directement
-  const token = authHeader.startsWith('Bearer ')
-    ? authHeader.slice(7)
-    : authHeader
+  // Le secret Supabase est au format "v1,whsec_BASE64SECRET"
+  // Extraire la partie base64 après "v1,whsec_"
+  const secretPart = secretEnv.includes(',')
+    ? secretEnv.split(',')[1]
+    : secretEnv
+  const secretKey = secretPart.startsWith('whsec_')
+    ? secretPart.slice(6)
+    : secretPart
 
-  return token === secret
+  // La signature est au format "v1,SIGNATURE" — extraire les parties
+  // Le header peut contenir : "t=TIMESTAMP,v1=SIGNATURE"
+  const parts = signature.split(',')
+  let timestamp = ''
+  let sig = ''
+  for (const part of parts) {
+    const [key, val] = part.split('=')
+    if (key === 't') timestamp = val
+    if (key === 'v1') sig = val
+  }
+
+  if (!sig) {
+    console.error('[auth-hook] Signature v1 non trouvée dans:', signature)
+    return false
+  }
+
+  // Vérifier le HMAC : sign(timestamp.body) avec le secret décodé en base64
+  try {
+    const secretBytes = Buffer.from(secretKey, 'base64')
+    const signedContent = `${timestamp}.${rawBody}`
+    const expectedSig = crypto
+      .createHmac('sha256', secretBytes)
+      .update(signedContent)
+      .digest('base64')
+
+    return crypto.timingSafeEqual(
+      Buffer.from(sig),
+      Buffer.from(expectedSig)
+    )
+  } catch (err) {
+    console.error('[auth-hook] Erreur vérification signature:', err)
+    return false
+  }
 }
 
 // Construit le lien de vérification Supabase
@@ -72,15 +109,18 @@ function extrairePrenom(fullName?: string): string {
 }
 
 export async function POST(request: Request) {
-  // Vérification de l'authenticité de la requête
-  if (!verifierSecret(request)) {
+  // Lire le body brut pour la vérification de signature
+  const rawBody = await request.text()
+
+  // Vérification de la signature HMAC
+  if (!verifierSignature(rawBody, request)) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   }
 
   let payload: AuthHookPayload
 
   try {
-    payload = await request.json()
+    payload = JSON.parse(rawBody)
   } catch {
     return NextResponse.json({ error: 'Payload invalide' }, { status: 400 })
   }
