@@ -102,10 +102,11 @@ function construireLienVerification(
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.musae.io'
   const callbackUrl = `${appUrl}/auth/callback`
 
+  // Toujours rediriger vers /auth/callback, quel que soit le redirect_to du payload
   const params = new URLSearchParams({
     token_hash: tokenHash,
     type,
-    redirect_to: redirectTo || callbackUrl,
+    redirect_to: callbackUrl,
   })
   return `${supabaseUrl}/auth/v1/verify?${params.toString()}`
 }
