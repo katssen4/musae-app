@@ -33,9 +33,16 @@ export async function middleware(request: NextRequest) {
 
   const isAuthPage = request.nextUrl.pathname.startsWith('/login') ||
     request.nextUrl.pathname.startsWith('/register')
+  const isAuthCallback = request.nextUrl.pathname.startsWith('/auth/callback') ||
+    request.nextUrl.pathname.startsWith('/auth/confirm')
   const isDashboard = request.nextUrl.pathname.startsWith('/dashboard')
 
-  // Redirect unauthenticated users away from dashboard
+  // Laisser passer le callback d'auth (échange de code Supabase)
+  if (isAuthCallback) {
+    return supabaseResponse
+  }
+
+  // Rediriger les utilisateurs non connectés hors du dashboard
   if (!user && isDashboard) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'

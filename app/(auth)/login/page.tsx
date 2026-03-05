@@ -21,7 +21,18 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      setError('Email ou mot de passe incorrect.')
+      console.error('[login] Erreur Supabase:', error.message, error.status)
+
+      if (error.message.includes('Invalid login') || error.message.includes('invalid')) {
+        setError('Email ou mot de passe incorrect.')
+      } else if (error.message.includes('Email not confirmed')) {
+        setError('Votre adresse email n\'a pas encore été confirmée. Vérifiez votre boîte mail.')
+      } else if (error.message.includes('rate') || error.status === 429) {
+        setError('Trop de tentatives. Veuillez patienter quelques minutes.')
+      } else {
+        setError(`Une erreur est survenue : ${error.message}`)
+      }
+
       setLoading(false)
       return
     }
