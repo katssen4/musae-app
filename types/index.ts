@@ -1,4 +1,4 @@
-export type Platform = 'facebook' | 'instagram' | 'linkedin'
+export type Platform = 'facebook' | 'instagram'
 export type PostFormat = 'quote' | 'reflective' | 'question' | 'announcement' | 'behind_scenes'
 export type PostStatus = 'draft' | 'approved' | 'scheduled' | 'published' | 'failed'
 export type Plan = 'free' | 'musae'

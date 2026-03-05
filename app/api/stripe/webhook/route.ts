@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createAdminClient } from '@/lib/supabase-server'
+import { envoyerEmailConfirmationAbonnement } from '@/lib/email'
 
 // Sprint 5 : webhooks Stripe pour gestion des abonnements
 export async function POST(request: Request) {
@@ -38,6 +39,20 @@ export async function POST(request: Request) {
           plan,
         })
         .eq('stripe_customer_id', customerId)
+
+      // Email de confirmation uniquement à la création d'un abonnement actif
+      if (event.type === 'customer.subscription.created' && plan === 'musae') {
+        const customerObj = await stripe.customers.retrieve(customerId)
+        const stripeCustomer = customerObj as Stripe.Customer
+        const email = stripeCustomer.email
+        const prenom = (stripeCustomer.name ?? 'cher auteur').trim().split(' ')[0]
+
+        if (email) {
+          envoyerEmailConfirmationAbonnement({ email, prenom }).catch((err) => {
+            console.error('[stripe/webhook] Erreur email abonnement:', err)
+          })
+        }
+      }
 
       break
     }

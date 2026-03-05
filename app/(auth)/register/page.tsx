@@ -33,6 +33,14 @@ export default function RegisterPage() {
       return
     }
 
+    // Envoi de l'email de bienvenue — non-bloquant, l'inscription reste valide même en cas d'échec
+    const prenom = fullName.trim().split(' ')[0]
+    fetch('/api/email/welcome', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, prenom }),
+    }).catch((err) => console.error('[register] Email bienvenue non envoyé:', err))
+
     router.push('/dashboard')
     router.refresh()
   }

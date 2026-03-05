@@ -7,7 +7,6 @@ import { useToast } from './Toast'
 const platformLabel: Record<string, string> = {
   facebook: 'Facebook',
   instagram: 'Instagram',
-  linkedin: 'LinkedIn',
 }
 
 const formatLabel: Record<string, string> = {

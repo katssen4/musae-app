@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   author_style TEXT,            -- Description du style littéraire pour le prompt IA
   stripe_customer_id TEXT,
   stripe_subscription_id TEXT,
-  plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'essential', 'author')),
+  plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'musae')),
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 CREATE TABLE IF NOT EXISTS public.social_connections (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  platform TEXT NOT NULL CHECK (platform IN ('facebook', 'instagram', 'linkedin')),
+  platform TEXT NOT NULL CHECK (platform IN ('facebook', 'instagram')),
   access_token TEXT NOT NULL,   -- Stocker chiffré en production
   page_id TEXT,                 -- Pour Facebook Pages
   instagram_account_id TEXT,
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS public.posts (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   content_id UUID REFERENCES public.contents(id) ON DELETE SET NULL,
-  platform TEXT NOT NULL CHECK (platform IN ('facebook', 'instagram', 'linkedin')),
+  platform TEXT NOT NULL CHECK (platform IN ('facebook', 'instagram')),
   format TEXT NOT NULL CHECK (format IN ('quote', 'reflective', 'question', 'announcement', 'behind_scenes')),
   body TEXT NOT NULL,
   status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'approved', 'scheduled', 'published', 'failed')),
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS public.posts (
 CREATE TABLE IF NOT EXISTS public.schedules (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  platform TEXT NOT NULL CHECK (platform IN ('facebook', 'instagram', 'linkedin')),
+  platform TEXT NOT NULL CHECK (platform IN ('facebook', 'instagram')),
   frequency TEXT NOT NULL CHECK (frequency IN ('daily', '3x_week', 'weekly')),
   preferred_time TIME NOT NULL DEFAULT '09:00',
   is_active BOOLEAN DEFAULT TRUE NOT NULL,
@@ -169,6 +169,10 @@ CREATE POLICY "waitlist_select_anon" ON public.waitlist
 -- STORAGE : Bucket pour les images uploadées par les auteurs
 -- À configurer dans Supabase Dashboard > Storage
 -- ============================================================
--- INSERT INTO storage.buckets (id, name, public) VALUES ('content-images', 'content-images', false);
--- CREATE POLICY "content_images_user_own" ON storage.objects
---   FOR ALL USING (auth.uid()::text = (storage.foldername(name))[1]);
+-- Bucket public : nécessaire pour que getPublicUrl() retourne des URLs accessibles
+-- (upload/route.ts utilise getPublicUrl — un bucket privé retournerait des URLs inaccessibles)
+INSERT INTO storage.buckets (id, name, public) VALUES ('content-images', 'content-images', true);
+
+-- Politique : chaque auteur ne peut accéder qu'à son propre dossier (user_id/)
+CREATE POLICY "content_images_user_own" ON storage.objects
+  FOR ALL USING (auth.uid()::text = (storage.foldername(name))[1]);

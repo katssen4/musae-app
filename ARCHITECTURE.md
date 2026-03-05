@@ -34,7 +34,7 @@ Musae est un micro-SaaS qui permet à des auteurs indépendants (35-80 ans, peu 
 
 ### Paiement
 - **Provider :** Stripe (abonnements récurrents)
-- **Plans :** Essentiel 20€/mois — Auteur 35€/mois
+- **Plans :** 20€/mois (plan unique)
 
 ### Scheduling & Publication
 - **Queue :** Vercel Cron Jobs (simple, intégré)
@@ -94,7 +94,7 @@ CREATE TABLE profiles (
   author_style TEXT,          -- Description du style littéraire pour le prompt IA
   stripe_customer_id TEXT,
   stripe_subscription_id TEXT,
-  plan TEXT DEFAULT 'free',   -- 'free' | 'essential' | 'author'
+  plan TEXT DEFAULT 'free',   -- 'free' | 'musae'
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -102,7 +102,7 @@ CREATE TABLE profiles (
 CREATE TABLE social_connections (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-  platform TEXT NOT NULL,     -- 'facebook' | 'instagram' | 'linkedin'
+  platform TEXT NOT NULL,     -- 'facebook' | 'instagram'
   access_token TEXT NOT NULL,
   page_id TEXT,               -- Pour Facebook Pages
   instagram_account_id TEXT,
@@ -125,7 +125,7 @@ CREATE TABLE posts (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   content_id UUID REFERENCES contents(id),
-  platform TEXT NOT NULL,     -- 'facebook' | 'instagram' | 'linkedin'
+  platform TEXT NOT NULL,     -- 'facebook' | 'instagram'
   format TEXT NOT NULL,       -- 'quote' | 'reflective' | 'question' | 'announcement' | 'behind_scenes'
   body TEXT NOT NULL,         -- Texte du post
   status TEXT DEFAULT 'draft', -- 'draft' | 'approved' | 'scheduled' | 'published' | 'failed'
@@ -161,7 +161,7 @@ CREATE TABLE schedules (
   contentId: string,
   rawText?: string,
   imageUrl?: string,
-  platforms: ('facebook' | 'instagram' | 'linkedin')[],
+  platforms: ('facebook' | 'instagram')[],
   authorStyle?: string  // récupéré depuis profiles.author_style
 }
 
@@ -297,8 +297,7 @@ ANTHROPIC_API_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
-STRIPE_PRICE_ESSENTIAL=     # ID du prix Stripe 20€/mois
-STRIPE_PRICE_AUTHOR=        # ID du prix Stripe 35€/mois
+STRIPE_PRICE_MUSAE=         # ID du prix Stripe 20€/mois
 
 # Meta (Facebook + Instagram)
 META_APP_ID=

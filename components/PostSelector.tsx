@@ -14,7 +14,6 @@ export default function PostSelector({ posts, selectedByPlatform, onSelect, imag
   const platformLabel: Record<Platform, string> = {
     facebook: 'Facebook',
     instagram: 'Instagram',
-    linkedin: 'LinkedIn',
   }
 
   const postsByPlatform = (platform: Platform) =>

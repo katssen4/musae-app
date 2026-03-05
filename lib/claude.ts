@@ -5,7 +5,7 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 })
 
-const VALID_PLATFORMS: Platform[] = ['facebook', 'instagram', 'linkedin']
+const VALID_PLATFORMS: Platform[] = ['facebook', 'instagram']
 const VALID_FORMATS: PostFormat[] = ['quote', 'reflective', 'question', 'announcement', 'behind_scenes']
 
 const PLATFORM_GUIDELINES: Record<Platform, string> = {
@@ -19,8 +19,6 @@ const PLATFORM_GUIDELINES: Record<Platform, string> = {
 - STRUCTURE : première ligne = accroche visuelle ou émotionnelle (pas de hashtag), corps concis et rythmé, terminer par 5-8 hashtags pertinents mélangeant niche littéraire (#littératurefrançaise #écrivain) et thèmes du texte.
 - Les hashtags sur une ligne séparée après un saut de ligne.
 - Objectif : arrêter le scroll. Chaque mot doit porter.`,
-  linkedin: `LinkedIn (2 posts) :
-- 200-400 mots. Ton professionnel et réflexif. Mettre en avant l'expertise.`,
 }
 
 // --- JSON parsing helpers ---
