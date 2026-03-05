@@ -91,24 +91,19 @@ function verifierSignature(rawBody: string, request: Request): boolean {
   }
 }
 
-// Construit le lien de vérification Supabase
+// Construit le lien de vérification via notre propre route /auth/confirm
+// On ne passe plus par le endpoint Supabase /auth/v1/verify qui pose problème
 function construireLienVerification(
   tokenHash: string,
-  type: string,
-  redirectTo: string
+  type: string
 ): string {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  // Rediriger vers notre callback qui échange le code et envoie l'email de bienvenue
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.musae.io'
-  const callbackUrl = `${appUrl}/auth/callback`
 
-  // Toujours rediriger vers /auth/callback, quel que soit le redirect_to du payload
   const params = new URLSearchParams({
     token_hash: tokenHash,
     type,
-    redirect_to: callbackUrl,
   })
-  return `${supabaseUrl}/auth/v1/verify?${params.toString()}`
+  return `${appUrl}/auth/confirm?${params.toString()}`
 }
 
 // Extrait le prénom depuis le full_name
@@ -158,11 +153,7 @@ export async function POST(request: Request) {
     switch (email_data.email_action_type) {
       case 'signup': {
         // Email de confirmation d'adresse après inscription
-        const lien = construireLienVerification(
-          email_data.token_hash,
-          'signup',
-          email_data.redirect_to
-        )
+        const lien = construireLienVerification(email_data.token_hash, 'signup')
         await envoyerEmailConfirmation({ email, prenom, lienConfirmation: lien })
         console.log(`[auth-hook] Email confirmation signup envoyé à ${email}`)
         break
@@ -170,11 +161,7 @@ export async function POST(request: Request) {
 
       case 'recovery': {
         // Email de réinitialisation de mot de passe
-        const lien = construireLienVerification(
-          email_data.token_hash,
-          'recovery',
-          email_data.redirect_to
-        )
+        const lien = construireLienVerification(email_data.token_hash, 'recovery')
         await envoyerEmailResetPassword({ email, prenom, lienReset: lien })
         console.log(`[auth-hook] Email recovery envoyé à ${email}`)
         break
@@ -182,11 +169,7 @@ export async function POST(request: Request) {
 
       case 'magic_link': {
         // Magic link — réutilise le template confirmation
-        const lien = construireLienVerification(
-          email_data.token_hash,
-          'magiclink',
-          email_data.redirect_to
-        )
+        const lien = construireLienVerification(email_data.token_hash, 'magiclink')
         await envoyerEmailConfirmation({ email, prenom, lienConfirmation: lien })
         console.log(`[auth-hook] Email magic_link envoyé à ${email}`)
         break
@@ -194,11 +177,7 @@ export async function POST(request: Request) {
 
       case 'email_change': {
         // Changement d'email — réutilise le template confirmation
-        const lien = construireLienVerification(
-          email_data.token_hash,
-          'email_change',
-          email_data.redirect_to
-        )
+        const lien = construireLienVerification(email_data.token_hash, 'email_change')
         await envoyerEmailConfirmation({ email, prenom, lienConfirmation: lien })
         console.log(`[auth-hook] Email email_change envoyé à ${email}`)
         break
